@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serenity Stays | Admin Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        /* Import Tailwind CSS */
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css');
+        
+        /* Custom Styles */
+        :root {
+            --primary: #8B7355;
+            --secondary: #D4B996;
+            --accent: #A67C52;
+            --light: #F9F5F0;
+            --dark: #3A2C1E;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F7FA;
+            overflow-x: hidden;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--dark) 0%, #2A1F15 100%);
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            position: relative;
+        }
+        
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .sidebar.collapsed .sidebar-header .logo-text {
+            display: none;
+        }
+        
+        .sidebar-menu {
+            padding: 1rem 0;
+            overflow-y: auto;
+            height: calc(100vh - 200px);
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: rgba(255,255,255,0.8);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .menu-item:hover, .menu-item.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .menu-item.active:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--secondary);
+        }
+        
+        .menu-icon {
+            width: 24px;
+            margin-right: 12px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .sidebar.collapsed .menu-text {
+            display: none;
+        }
+        
+        .sidebar.collapsed .menu-item {
+            justify-content: center;
+            padding: 0.75rem;
+        }
+        
+        .sidebar.collapsed .menu-icon {
+            margin-right: 0;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar.collapsed .sidebar-footer .user-info {
+            display: none;
+        }
+        
+        .sidebar.collapsed .sidebar-footer .user-avatar {
+            margin: 0 auto;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .topbar {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--dark);
+            cursor: pointer;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-left: 1rem;
+        }
+        
+        .content-area {
+            padding: 1.5rem;
+            padding-top: 0;
+        }
+        
+        /* Mobile Overlay */
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Dashboard Cards */
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stats-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .icon-revenue { background: linear-gradient(135deg, var(--success), #059669); }
+        .icon-bookings { background: linear-gradient(135deg, var(--info), #2563EB); }
+        .icon-occupancy { background: linear-gradient(135deg, var(--warning), #D97706); }
+        .icon-properties { background: linear-gradient(135deg, var(--primary), #7C5D3F); }
+        
+        /* Table Styles */
+        .data-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .table-header {
+            background: #F9FAFB;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        
+        th {
+            background: #F9FAFB;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #E5E7EB;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background: #F9FAFB;
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-confirmed { background: #D1FAE5; color: #065F46; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-cancelled { background: #FEE2E2; color: #991B1B; }
+        .status-checked-in { background: #DBEAFE; color: #1E40AF; }
+        .status-checked-out { background: #E0E7FF; color: #3730A3; }
+        .status-active { background: #D1FAE5; color: #065F46; }
+        .status-inactive { background: #FEE2E2; color: #991B1B; }
+        .status-completed { background: #D1FAE5; color: #065F46; }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 6px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            margin: 1rem;
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: #6B7280;
+            cursor: pointer;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Charts */
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        /* Property Cards */
+        .property-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .property-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .property-image {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                top: 0;
+                height: 100vh;
+                z-index: 1001;
+            }
+            
+            .sidebar.active {
+                left: 0;
+            }
+            
+            .main-content {
+                width: 100%;
+            }
+            
+            .topbar {
+                padding: 1rem;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            table {
+                min-width: 500px;
+            }
+            
+            .stats-card {
+                padding: 1rem;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 0.5rem;
+            }
+        }
+        
+        /* Animation classes */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .fade-in.appear {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Kenyan specific styles */
+        .currency-kes::before {
+            content: "KSh ";
+        }
+
+        /* Add space between header and main content */
+.content-area {
+    padding-top: 2rem;
+}
+
+/* Hide toggler icon on larger devices */
+@media (min-width: 1024px) {
+    .toggle-sidebar {
+        display: none;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-xl flex-shrink-0">SS</div>
+                    <div class="logo-text">
+                        <h2 class="text-lg font-bold">Serenity Stays</h2>
+                        <p class="text-xs text-gray-300">Admin Dashboard</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="menu-item active" data-tab="dashboard">
+                    <div class="menu-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <div class="menu-text">Dashboard</div>
+                </div>
+                
+                <div class="menu-item" data-tab="properties">
+                    <div class="menu-icon"><i class="fas fa-home"></i></div>
+                    <div class="menu-text">Properties</div>
+                </div>
+                
+                <div class="menu-item" data-tab="bookings">
+                    <div class="menu-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="menu-text">Bookings</div>
+                </div>
+                
+                <div class="menu-item" data-tab="guests">
+                    <div class="menu-icon"><i class="fas fa-users"></i></div>
+                    <div class="menu-text">Guests</div>
+                </div>
+                
+                <div class="menu-item" data-tab="reports">
+                    <div class="menu-icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="menu-text">Reports</div>
+                </div>
+                
+                <div class="menu-item" data-tab="staff">
+                    <div class="menu-icon"><i class="fas fa-user-shield"></i></div>
+                    <div class="menu-text">Staff</div>
+                </div>
+                
+                <div class="menu-item" data-tab="finance">
+                    <div class="menu-icon"><i class="fas fa-money-bill-wave"></i></div>
+                    <div class="menu-text">Finance</div>
+                </div>
+                
+                <div class="menu-item" data-tab="settings">
+                    <div class="menu-icon"><i class="fas fa-cogs"></i></div>
+                    <div class="menu-text">Settings</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="flex items-center user-info">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold flex-shrink-0">JM</div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium">Jane Muthoni</p>
+                        <p class="text-xs text-gray-300">Administrator</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Topbar -->
+            <div class="topbar">
+                <div class="flex items-center">
+                    <button class="toggle-sidebar" id="toggleSidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="text-xl font-bold ml-4" id="pageTitle">Dashboard</h1>
+                </div>
+                
+                <div class="user-menu">
+                    <div class="relative mr-4">
+                        <button class="flex items-center text-gray-700">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                        </button>
+                    </div>
+                    
+                    <div class="user-avatar">JM</div>
+                </div>
+            </div>
+            
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Dashboard Tab -->
+                <div class="tab-content active" id="dashboard-tab">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="stats-card fade-in appear">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-bold currency-kes">245800</h3>
+                                    <p class="text-gray-500">Total Revenue</p>
+                                </div>
+                                <div class="stats-icon icon-revenue">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-medium"><i class="fas fa-arrow-up"></i> 12.5%</span>
+                                <span class="text-gray-500 text-sm"> from last month</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card fade-in appear">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-bold">24</h3>
+                                    <p class="text-gray-500">Active Bookings</p>
+                                </div>
+                                <div class="stats-icon icon-bookings">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-medium"><i class="fas fa-arrow-up"></i> 8.3%</span>
+                                <span class="text-gray-500 text-sm"> from last month</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card fade-in appear">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-bold">78</h3>
+                                    <p class="text-gray-500">Occupancy Rate %</p>
+                                </div>
+                                <div class="stats-icon icon-occupancy">
+                                    <i class="fas fa-bed"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-medium"><i class="fas fa-arrow-up"></i> 5.2%</span>
+                                <span class="text-gray-500 text-sm"> from last month</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card fade-in appear">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-bold">6</h3>
+                                    <p class="text-gray-500">Properties</p>
+                                </div>
+                                <div class="stats-icon icon-properties">
+                                    <i class="fas fa-home"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span class="text-green-500 text-sm font-medium"><i class="fas fa-plus"></i> 1</span>
+                                <span class="text-gray-500 text-sm"> new this year</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="chart-container fade-in appear">
+                            <h3 class="text-lg font-bold mb-4">Revenue Overview</h3>
+                            <canvas id="revenueChart" height="250"></canvas>
+                        </div>
+                        
+                        <div class="chart-container fade-in appear">
+                            <h3 class="text-lg font-bold mb-4">Booking Sources</h3>
+                            <canvas id="bookingSourcesChart" height="250"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Bookings -->
+                    <div class="data-table fade-in appear">
+                        <div class="table-header">
+                            <h3 class="text-lg font-bold">Recent Bookings</h3>
+                            <button class="btn btn-primary btn-sm">View All</button>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Guest</th>
+                                        <th>Property</th>
+                                        <th>Check-In</th>
+                                        <th>Check-Out</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentBookingsTbody">
+                                    <!-- Populated by script -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Properties Tab -->
+                <div class="tab-content" id="properties-tab">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                        <h2 class="text-2xl font-bold">Properties Management</h2>
+                        <button class="btn btn-primary" id="addPropertyBtn">
+                            <i class="fas fa-plus mr-2"></i> Add New Property
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="propertiesGrid">
+                        <!-- Populated by script -->
+                    </div>
+                </div>
+                
+                <!-- Bookings Tab -->
+                <div class="tab-content" id="bookings-tab">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                        <h2 class="text-2xl font-bold">Bookings Management</h2>
+                        <div class="flex space-x-2">
+                            <select class="form-control" style="width: auto; min-width: 150px;">
+                                <option>Filter by Status</option>
+                                <option>Confirmed</option>
+                                <option>Pending</option>
+                                <option>Cancelled</option>
+                            </select>
+                            <button class="btn btn-primary" id="addBookingBtn">
+                                <i class="fas fa-plus mr-2"></i>Add Booking
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="data-table fade-in">
+                        <div class="table-header">
+                            <h3 class="text-lg font-bold">All Bookings</h3>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Booking ID</th>
+                                        <th>Guest</th>
+                                        <th>Property</th>
+                                        <th>Check-In</th>
+                                        <th>Check-Out</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bookingsTbody">
+                                    <!-- Populated by script -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Guests Tab -->
+                <div class="tab-content" id="guests-tab">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                        <h2 class="text-2xl font-bold">Guests Management</h2>
+                        <button class="btn btn-primary" id="addGuestBtn">
+                            <i class="fas fa-plus mr-2"></i> Add New Guest
+                        </button>
+                    </div>
+                    
+                    <div class="data-table fade-in">
+                        <div class="table-header">
+                            <h3 class="text-lg font-bold">All Guests</h3>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Total Bookings</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="guestsTbody">
+                                    <!-- Populated by script -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Reports Tab -->
+                <div class="tab-content" id="reports-tab">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                        <h2 class="text-2xl font-bold">Reports</h2>
+                        <button class="btn btn-primary" id="generateReportBtn">
+                            <i class="fas fa-download mr-2"></i> Generate Report
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="chart-container fade-in">
+                            <h3 class="text-lg font-bold mb-4">Monthly Revenue</h3>
+                            <canvas id="monthlyRevenueChart" height="250"></canvas>
+                        </div>
+                        
+                        <div class="chart-container fade-in">
+                            <h3 class="text-lg font-bold mb-4">Top Properties</h3>
+                            <canvas id="topPropertiesChart" height="250"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="data-table fade-in">
+                        <div class="table-header">
+                            <h3 class="text-lg font-bold">Recent Reports</h3>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Report Type</th>
+                                        <th>Date Generated</th>
+                                        <th>Period</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportsTbody">
+                                    <!-- Populated by script -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Staff Tab -->
+                <div class="tab-content" id="staff-tab">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                        <h2 class="text-2xl font-bold">Staff Management</h2>
+                        <button class="btn btn-primary" id="addStaffBtn">
+                            <i class="fas fa-plus mr-2"></i> Add New Staff
+                        </button>
+                    </div>
+                    
+                    <div class="data-table fade-in">
+                        <div class="table-header">
+                            <h3 class="text-lg font-bold">All Staff</h3>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Properties Assigned</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staffTbody">
+                                    <!-- Populated by script -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Finance Tab -->
+                <div class="tab-content" id="finance-tab">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                        <h2 class="text-2xl font-bold">Finance</h2>
+                        <button class="btn btn-primary" id="addTransactionBtn">
+                            <i class="fas fa-plus mr-2"></i> Add Transaction
+                        </button>
+                    </div>
+                    
+                    <div class="data-table fade-in">
+                        <div class="table-header">
+                            <h3 class="text-lg font-bold">Recent Transactions</h3>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Amount</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="financeTbody">
+                                    <!-- Populated by script -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Tab -->
+                <div class="tab-content" id="settings-tab">
+                    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                        <h2 class="text-2xl font-bold">Settings</h2>
+                        <button class="btn btn-primary" id="editSettingsBtn">
+                            <i class="fas fa-edit mr-2"></i> Edit Settings
+                        </button>
+                    </div>
+                    
+                    <div class="data-table fade-in">
+                        <div class="table-header">
+                            <h3 class="text-lg font-bold">System Settings</h3>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Setting</th>
+                                        <th>Value</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="settingsTbody">
+                                    <!-- Populated by script -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Property Modal -->
+    <div class="modal" id="addPropertyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">Add New Property</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="propertyForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Property Name</label>
+                            <input type="text" class="form-control" value="Seaside Villa">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-control" value="Diani Beach, Mombasa">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Nightly Rate (KES)</label>
+                            <input type="number" class="form-control" value="15000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Property Type</label>
+                            <select class="form-control">
+                                <option>Villa</option>
+                                <option>Apartment</option>
+                                <option>Cabin</option>
+                                <option>Guest House</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Bedrooms</label>
+                            <input type="number" class="form-control" value="3">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Bathrooms</label>
+                            <input type="number" class="form-control" value="2">
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="3">A luxurious seaside villa with ocean views, perfect for family vacations. Features a private pool and direct beach access.</textarea>
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Amenities</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2" checked> WiFi
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2" checked> Pool
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2" checked> AC
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2"> Parking
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                <button type="submit" form="propertyForm" class="btn btn-primary">Save Property</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Booking Modal -->
+    <div class="modal" id="addBookingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">Add New Booking</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="bookingForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Guest Name</label>
+                            <input type="text" class="form-control" value="John Doe">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" value="john@example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Property</label>
+                            <select class="form-control">
+                                <option>Seaside Villa</option>
+                                <option>Mountain Retreat</option>
+                                <option>City Apartment</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Check-In Date</label>
+                            <input type="date" class="form-control" value="2025-11-15">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Check-Out Date</label>
+                            <input type="date" class="form-control" value="2025-11-20">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Number of Guests</label>
+                            <input type="number" class="form-control" value="2">
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Special Requests</label>
+                            <textarea class="form-control" rows="3">Extra towels and late checkout if possible.</textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                <button type="submit" form="bookingForm" class="btn btn-primary">Save Booking</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Guest Modal -->
+    <div class="modal" id="addGuestModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">Add New Guest</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="guestForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" value="John">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" value="Doe">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" value="john@example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-control" value="+254 700 123 456">
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" rows="2">123 Beach Road, Nairobi, Kenya</textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                <button type="submit" form="guestForm" class="btn btn-primary">Save Guest</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Generate Report Modal -->
+    <div class="modal" id="generateReportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">Generate Report</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="reportForm">
+                    <div class="form-group">
+                        <label class="form-label">Report Type</label>
+                        <select class="form-control">
+                            <option>Revenue Report</option>
+                            <option>Occupancy Report</option>
+                            <option>Bookings Summary</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" value="2025-09-01">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" value="2025-09-28">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Format</label>
+                        <select class="form-control">
+                            <option>PDF</option>
+                            <option>Excel</option>
+                            <option>CSV</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                <button type="submit" form="reportForm" class="btn btn-primary">Generate</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Staff Modal -->
+    <div class="modal" id="addStaffModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">Add New Staff</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="staffForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" value="Jane">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" value="Muthoni">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" value="jane@serenitystays.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-control" value="+254 700 123 456">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Role</label>
+                            <select class="form-control">
+                                <option>Administrator</option>
+                                <option>Manager</option>
+                                <option>Receptionist</option>
+                                <option>Cleaner</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Properties Assigned</label>
+                            <select multiple class="form-control" size="4">
+                                <option>Seaside Villa</option>
+                                <option>Mountain Retreat</option>
+                                <option>City Apartment</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                <button type="submit" form="staffForm" class="btn btn-primary">Save Staff</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Transaction Modal -->
+    <div class="modal" id="addTransactionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">Add Transaction</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" value="2025-09-28">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <input type="text" class="form-control" value="Booking payment">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Amount (KES)</label>
+                            <input type="number" class="form-control" value="45000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select class="form-control">
+                                <option>Income</option>
+                                <option>Expense</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label">Category</label>
+                            <select class="form-control">
+                                <option>Booking Revenue</option>
+                                <option>Maintenance</option>
+                                <option>Utilities</option>
+                                <option>Staff Salary</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                <button type="submit" form="transactionForm" class="btn btn-primary">Add Transaction</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Settings Modal -->
+    <div class="modal" id="editSettingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold">Edit Settings</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="settingsForm">
+                    <div class="form-group">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" class="form-control" value="Serenity Stays">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Default Currency</label>
+                        <select class="form-control">
+                            <option>KES</option>
+                            <option>USD</option>
+                            <option>EUR</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Tax Rate (%)</label>
+                        <input type="number" step="0.01" class="form-control" value="16">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Cancellation Policy</label>
+                        <textarea class="form-control" rows="4">Free cancellation up to 48 hours before arrival. After that, 50% charge applies.</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email Notifications</label>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2" checked> Booking Confirmations
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2" checked> Reminders
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2"> Marketing
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline close-modal">Cancel</button>
+                <button type="submit" form="settingsForm" class="btn btn-primary">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data
+        const sampleProperties = [
+            {
+                name: 'Seaside Villa',
+                location: 'Diani Beach, Mombasa',
+                image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                bedrooms: 3,
+                bathrooms: 2,
+                guests: 6,
+                rate: 15000,
+                status: 'active'
+            },
+            {
+                name: 'Mountain Retreat',
+                location: 'Nanyuki, Laikipia',
+                image: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                bedrooms: 4,
+                bathrooms: 3,
+                guests: 8,
+                rate: 25000,
+                status: 'active'
+            },
+            {
+                name: 'City Apartment',
+                location: 'Westlands, Nairobi',
+                image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+                bedrooms: 2,
+                bathrooms: 2,
+                guests: 4,
+                rate: 12000,
+                status: 'active'
+            }
+        ];
+        
+        const sampleBookings = [
+            {
+                id: 'BK001',
+                guest: 'John Doe',
+                property: 'Seaside Villa',
+                checkIn: '2025-11-15',
+                checkOut: '2025-11-20',
+                amount: 45000,
+                status: 'confirmed'
+            },
+            {
+                id: 'BK002',
+                guest: 'Sarah Mwangi',
+                property: 'Mountain Retreat',
+                checkIn: '2025-11-18',
+                checkOut: '2025-11-22',
+                amount: 52500,
+                status: 'checked-in'
+            },
+            {
+                id: 'BK003',
+                guest: 'Peter Kamau',
+                property: 'City Apartment',
+                checkIn: '2025-11-22',
+                checkOut: '2025-11-25',
+                amount: 36000,
+                status: 'pending'
+            },
+            {
+                id: 'BK004',
+                guest: 'Alice Njoroge',
+                property: 'Seaside Villa',
+                checkIn: '2025-11-25',
+                checkOut: '2025-11-30',
+                amount: 67500,
+                status: 'confirmed'
+            }
+        ];
+        
+        const sampleGuests = [
+            {
+                name: 'John Doe',
+                email: 'john@example.com',
+                phone: '+254 700 123 456',
+                bookings: 5,
+                status: 'active'
+            },
+            {
+                name: 'Sarah Mwangi',
+                email: 'sarah@example.com',
+                phone: '+254 711 234 567',
+                bookings: 3,
+                status: 'active'
+            },
+            {
+                name: 'Peter Kamau',
+                email: 'peter@example.com',
+                phone: '+254 722 345 678',
+                bookings: 2,
+                status: 'inactive'
+            }
+        ];
+        
+        const sampleReports = [
+            {
+                type: 'Revenue Report',
+                date: '2025-09-28',
+                period: 'Sep 2025',
+                status: 'completed'
+            },
+            {
+                type: 'Occupancy Report',
+                date: '2025-09-15',
+                period: 'Aug 2025',
+                status: 'completed'
+            },
+            {
+                type: 'Bookings Summary',
+                date: '2025-09-01',
+                period: 'Jul 2025',
+                status: 'pending'
+            }
+        ];
+        
+        const sampleStaff = [
+            {
+                name: 'Jane Muthoni',
+                email: 'jane@serenitystays.com',
+                role: 'Administrator',
+                properties: 'All',
+                status: 'active'
+            },
+            {
+                name: 'David Otieno',
+                email: 'david@serenitystays.com',
+                role: 'Manager',
+                properties: 'Seaside Villa, City Apartment',
+                status: 'active'
+            },
+            {
+                name: 'Mary Wanjiku',
+                email: 'mary@serenitystays.com',
+                role: 'Receptionist',
+                properties: 'Mountain Retreat',
+                status: 'inactive'
+            }
+        ];
+        
+        const sampleTransactions = [
+            {
+                id: 'TX001',
+                date: '2025-09-28',
+                description: 'Booking Payment - BK001',
+                amount: 45000,
+                type: 'income',
+                status: 'completed'
+            },
+            {
+                id: 'TX002',
+                date: '2025-09-27',
+                description: 'Maintenance - Seaside Villa',
+                amount: 15000,
+                type: 'expense',
+                status: 'completed'
+            },
+            {
+                id: 'TX003',
+                date: '2025-09-26',
+                description: 'Booking Payment - BK002',
+                amount: 52500,
+                type: 'income',
+                status: 'pending'
+            }
+        ];
+        
+        const sampleSettings = [
+            {
+                setting: 'Company Name',
+                value: 'Serenity Stays'
+            },
+            {
+                setting: 'Default Currency',
+                value: 'KES'
+            },
+            {
+                setting: 'Tax Rate',
+                value: '16%'
+            },
+            {
+                setting: 'Cancellation Policy',
+                value: '48 hours notice'
+            }
+        ];
+        
+        // Initialize dashboard functionality
+        $(document).ready(function() {
+            let isMobile = $(window).width() < 1024;
+            
+            // Preload all tables to reduce delay
+            function preloadTables() {
+                populateRecentBookings();
+                populatePropertiesGrid();
+                populateBookingsTable();
+                populateGuestsTable();
+                populateReportsTable();
+                populateStaffTable();
+                populateFinanceTable();
+                populateSettingsTable();
+            }
+            
+            function updateToggle() {
+                isMobile = $(window).width() < 1024;
+                if (isMobile) {
+                    $('#toggleSidebar').off('click').click(function() {
+                        $('#sidebar').toggleClass('active');
+                        $('#mobileOverlay').toggleClass('active');
+                    });
+                    $('#mobileOverlay').off('click').click(function() {
+                        $('#sidebar').removeClass('active');
+                        $('#mobileOverlay').removeClass('active');
+                    });
+                } else {
+                    $('#toggleSidebar').off('click').click(function() {
+                        $('#sidebar').toggleClass('collapsed');
+                        if ($('#sidebar').hasClass('collapsed')) {
+                            $('#mainContent').removeClass('lg:ml-80');
+                        } else {
+                            $('#mainContent').addClass('lg:ml-80');
+                        }
+                    });
+                }
+            }
+            
+            updateToggle();
+            $(window).resize(updateToggle);
+            
+            // Menu item click
+            $('.menu-item').click(function() {
+                $('.menu-item').removeClass('active');
+                $(this).addClass('active');
+                
+                const tabId = $(this).data('tab') + '-tab';
+                $('.tab-content').removeClass('active');
+                $('#' + tabId).addClass('active');
+                
+                // Update page title
+                const title = $(this).find('.menu-text').text();
+                $('#pageTitle').text(title);
+                
+                // Close mobile sidebar after selection
+                if (isMobile) {
+                    $('#sidebar').removeClass('active');
+                    $('#mobileOverlay').removeClass('active');
+                }
+                
+                // Trigger fade-in for visible elements
+                checkFadeIn();
+            });
+            
+            // Modal functionality
+            $(document).on('click', '.close-modal', function() {
+                $(this).closest('.modal').removeClass('active');
+            });
+            
+            // Open modals
+            $('#addPropertyBtn').click(() => $('#addPropertyModal').addClass('active'));
+            $('#addBookingBtn').click(() => $('#addBookingModal').addClass('active'));
+            $('#addGuestBtn').click(() => $('#addGuestModal').addClass('active'));
+            $('#generateReportBtn').click(() => $('#generateReportModal').addClass('active'));
+            $('#addStaffBtn').click(() => $('#addStaffModal').addClass('active'));
+            $('#addTransactionBtn').click(() => $('#addTransactionModal').addClass('active'));
+            $('#editSettingsBtn').click(() => $('#editSettingsModal').addClass('active'));
+            
+            // Form submissions (simulate)
+            $('form').submit(function(e) {
+                e.preventDefault();
+                alert('Form submitted! (Demo)');
+                $(this).closest('.modal').removeClass('active');
+            });
+            
+            // Initialize charts
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+                    datasets: [{
+                        label: 'Revenue (KES)',
+                        data: [120000, 190000, 150000, 220000, 180000, 250000, 280000, 230000, 300000, 320000, 245800],
+                        borderColor: '#8B7355',
+                        backgroundColor: 'rgba(139, 115, 85, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: value => 'KSh ' + value.toLocaleString() }
+                        }
+                    }
+                }
+            });
+            
+            const sourcesCtx = document.getElementById('bookingSourcesChart').getContext('2d');
+            new Chart(sourcesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Website', 'Booking.com', 'Airbnb', 'Direct Contact', 'Other'],
+                    datasets: [{
+                        data: [40, 25, 20, 10, 5],
+                        backgroundColor: ['#8B7355', '#D4B996', '#A67C52', '#3A2C1E', '#F9F5F0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+            
+            const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart')?.getContext('2d');
+            if (monthlyRevenueCtx) {
+                new Chart(monthlyRevenueCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                        datasets: [{
+                            label: 'Revenue',
+                            data: [120000, 190000, 150000, 220000, 180000, 250000, 280000, 230000, 300000],
+                            backgroundColor: '#8B7355'
+                        }]
+                    },
+                    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+                });
+            }
+            
+            const topPropertiesCtx = document.getElementById('topPropertiesChart')?.getContext('2d');
+            if (topPropertiesCtx) {
+                new Chart(topPropertiesCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Seaside Villa', 'Mountain Retreat', 'City Apartment'],
+                        datasets: [{
+                            data: [45, 30, 25],
+                            backgroundColor: ['#8B7355', '#D4B996', '#A67C52']
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            }
+            
+            // Populate functions
+            function populateRecentBookings() {
+                const tbody = $('#recentBookingsTbody');
+                tbody.empty();
+                const recent = sampleBookings.slice(0, 4);
+                recent.forEach(booking => {
+                    const row = `
+                        <tr>
+                            <td>
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm mr-2">JD</div>
+                                    ${booking.guest}
+                                </div>
+                            </td>
+                            <td>${booking.property}</td>
+                            <td>${new Date(booking.checkIn).toLocaleDateString()}</td>
+                            <td>${new Date(booking.checkOut).toLocaleDateString()}</td>
+                            <td class="currency-kes font-medium">${booking.amount}</td>
+                            <td><span class="status-badge status-${booking.status}">${booking.status.replace('-', ' ').toUpperCase()}</span></td>
+                            <td><button class="btn btn-primary btn-sm">View</button></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+                formatCurrency();
+            }
+            
+            function populateBookingsTable() {
+                const tbody = $('#bookingsTbody');
+                tbody.empty();
+                sampleBookings.forEach(booking => {
+                    const row = `
+                        <tr>
+                            <td>${booking.id}</td>
+                            <td>${booking.guest}</td>
+                            <td>${booking.property}</td>
+                            <td>${new Date(booking.checkIn).toLocaleDateString()}</td>
+                            <td>${new Date(booking.checkOut).toLocaleDateString()}</td>
+                            <td class="currency-kes">${booking.amount}</td>
+                            <td><span class="status-badge status-${booking.status}">${booking.status.replace('-', ' ').toUpperCase()}</span></td>
+                            <td><button class="btn btn-primary btn-sm">View</button></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+                formatCurrency();
+            }
+            
+            function populateGuestsTable() {
+                const tbody = $('#guestsTbody');
+                tbody.empty();
+                sampleGuests.forEach(guest => {
+                    const row = `
+                        <tr>
+                            <td>${guest.name}</td>
+                            <td>${guest.email}</td>
+                            <td>${guest.phone}</td>
+                            <td>${guest.bookings}</td>
+                            <td><span class="status-badge status-${guest.status}">${guest.status.toUpperCase()}</span></td>
+                            <td><button class="btn btn-primary btn-sm">View</button></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }
+            
+            function populateReportsTable() {
+                const tbody = $('#reportsTbody');
+                tbody.empty();
+                sampleReports.forEach(report => {
+                    const row = `
+                        <tr>
+                            <td>${report.type}</td>
+                            <td>${new Date(report.date).toLocaleDateString()}</td>
+                            <td>${report.period}</td>
+                            <td><span class="status-badge status-${report.status}">${report.status.toUpperCase()}</span></td>
+                            <td><button class="btn btn-primary btn-sm">Download</button></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }
+            
+            function populateStaffTable() {
+                const tbody = $('#staffTbody');
+                tbody.empty();
+                sampleStaff.forEach(staff => {
+                    const row = `
+                        <tr>
+                            <td>${staff.name}</td>
+                            <td>${staff.email}</td>
+                            <td>${staff.role}</td>
+                            <td>${staff.properties}</td>
+                            <td><span class="status-badge status-${staff.status}">${staff.status.toUpperCase()}</span></td>
+                            <td><button class="btn btn-primary btn-sm">Edit</button></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }
+            
+            function populateFinanceTable() {
+                const tbody = $('#financeTbody');
+                tbody.empty();
+                sampleTransactions.forEach(tx => {
+                    const typeClass = tx.type === 'income' ? 'text-green-500' : 'text-red-500';
+                    const row = `
+                        <tr>
+                            <td>${tx.id}</td>
+                            <td>${new Date(tx.date).toLocaleDateString()}</td>
+                            <td>${tx.description}</td>
+                            <td class="currency-kes ${typeClass}">${tx.amount}</td>
+                            <td>${tx.type.toUpperCase()}</td>
+                            <td><span class="status-badge status-${tx.status}">${tx.status.toUpperCase()}</span></td>
+                            <td><button class="btn btn-primary btn-sm">View</button></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+                formatCurrency();
+            }
+            
+            function populateSettingsTable() {
+                const tbody = $('#settingsTbody');
+                tbody.empty();
+                sampleSettings.forEach(setting => {
+                    const row = `
+                        <tr>
+                            <td>${setting.setting}</td>
+                            <td>${setting.value}</td>
+                            <td><button class="btn btn-primary btn-sm">Edit</button></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }
+            
+            function populatePropertiesGrid() {
+                const grid = $('#propertiesGrid');
+                grid.empty();
+                sampleProperties.forEach(prop => {
+                    const card = `
+                        <div class="property-card fade-in appear">
+                            <div class="relative">
+                                <img src="${prop.image}" alt="${prop.name}" class="property-image w-full">
+                                <div class="absolute top-4 right-4 bg-${prop.status === 'active' ? 'green' : 'red'}-500 text-white px-2 py-1 rounded text-sm font-medium">${prop.status.toUpperCase()}</div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-xl font-bold mb-2">${prop.name}</h3>
+                                <p class="text-gray-600 mb-4">${prop.location}</p>
+                                
+                                <div class="flex justify-between text-sm text-gray-500 mb-4">
+                                    <div><i class="fas fa-bed mr-1"></i> ${prop.bedrooms} Bedrooms</div>
+                                    <div><i class="fas fa-bath mr-1"></i> ${prop.bathrooms} Bathrooms</div>
+                                    <div><i class="fas fa-users mr-1"></i> ${prop.guests} Guests</div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <span class="text-lg font-bold currency-kes">${prop.rate}</span>
+                                        <span class="text-gray-500">/night</span>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="btn btn-primary btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.append(card);
+                });
+                formatCurrency();
+            }
+            
+            // Fade in animation
+            function checkFadeIn() {
+                $('.fade-in').each(function() {
+                    const elementTop = $(this).offset().top;
+                    const elementBottom = elementTop + $(this).outerHeight();
+                    const viewportTop = $(window).scrollTop();
+                    const viewportBottom = viewportTop + $(window).height();
+                    
+                    if (elementBottom > viewportTop && elementTop < viewportBottom) {
+                        $(this).addClass('appear');
+                    }
+                });
+            }
+            
+            // Kenyan localization for currency
+            function formatCurrency() {
+                $('.currency-kes').each(function() {
+                    const $this = $(this);
+                    if (!$this.hasClass('formatted')) {
+                        let text = $this.text();
+                        const num = parseFloat(text.replace(/[^\d.-]/g, ''));
+                        if (!isNaN(num)) {
+                            $this.html(`KSh ${num.toLocaleString('en-KE')}`);
+                            $this.addClass('formatted');
+                        }
+                    }
+                });
+            }
+            
+            // Initialize
+            preloadTables();
+            checkFadeIn();
+            $(window).scroll(checkFadeIn);
+            
+            // Reformat on dynamic content
+            $(document).on('DOMNodeInserted', function(e) {
+                if ($(e.target).find('.currency-kes').length || $(e.target).hasClass('currency-kes')) {
+                    formatCurrency();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
